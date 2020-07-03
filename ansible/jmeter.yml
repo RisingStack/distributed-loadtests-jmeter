@@ -1,0 +1,11 @@
+- hosts: all
+  gather_facts: yes
+  roles:
+    - jmeter
+  tasks:
+    - name: All done!
+      debug:
+        msg:
+          - Jmeter installed successfully!
+
+        

@@ -1,0 +1,66 @@
+- name: Add epel-release repo
+  yum:
+    name: epel-release
+    state: present
+  become: yes
+
+- name: Install wget
+  yum:
+    name: wget
+    state: present
+  become: yes
+
+- name: Install Java 8
+  yum:
+    name: java-1.8.0-openjdk
+    state: present
+  become: yes
+
+- name: Create jmeter download dir
+  file:
+    path: "{{ ansible_env.HOME }}/downloads"
+    state: directory
+
+- name: Create jmeter dir
+  file:
+    path: "{{ ansible_env.HOME }}/jmeter"
+    state: directory
+
+- name: Download Jmeter
+  get_url:
+    url: https://downloads.apache.org//jmeter/binaries/apache-jmeter-5.2.1.tgz
+    dest: "{{ ansible_env.HOME }}/downloads"
+
+- name: Extract Jmeter
+  unarchive:
+    src: "{{ ansible_env.HOME }}/downloads/apache-jmeter-5.2.1.tgz"
+    dest: "{{ ansible_env.HOME }}/jmeter"
+    extra_opts: [--strip-components=1]
+    remote_src: yes
+
+- name: Add rmi keystore file
+  copy:
+    src: rmi_keystore.jks
+    dest: "{{ ansible_env.HOME }}/jmeter/bin"
+
+- name: Add setenv.sh to primary
+  copy:
+    src: setenv_primary.sh
+    dest: "{{ ansible_env.HOME }}/jmeter/bin/setenv.sh"
+  when: remote_hosts is defined
+
+- name: Add setenv.sh to runner
+  copy:
+    src: setenv_runner.sh
+    dest: "{{ ansible_env.HOME }}/jmeter/bin/setenv.sh"
+  when: runner is defined
+
+- name: Start Jmeter server runner
+  shell: "nohup {{ ansible_env.HOME }}/jmeter/bin/jmeter-server -Djava.rmi.server.hostname={{ inventory_hostname }} > jmeter-server.log 2> jmeter-server.err &"
+  args:
+    chdir: "{{ ansible_env.HOME }}/jmeter/bin"
+  when: runner is defined
+
+- name: Start Jmeter primary
+  shell: sed -i -e 's/remote_hosts=.*/remote_hosts={{ remote_hosts }}/g' {{ ansible_env.HOME }}/jmeter/bin/jmeter.properties
+  when: remote_hosts is defined

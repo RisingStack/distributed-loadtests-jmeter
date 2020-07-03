@@ -1,0 +1,9 @@
+- hosts: all
+  gather_facts: no
+  roles:
+    - create-user
+  tasks:
+    - name: All done!
+      debug:
+        msg:
+          - User created successfully!

@@ -1,0 +1,26 @@
+- name: Make sure we have a 'wheel' group
+  group:
+    name: wheel
+    state: present
+
+- name: Allow 'wheel' group to have passwordless sudo
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    regexp: '^%wheel'
+    line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+    validate: 'visudo -cf %s'
+
+- name: Create sudoer user
+  user:
+    name: "{{ user }}"
+    groups: wheel
+    append: yes
+    state: present
+    password: "{{ user_pw | password_hash('sha512') }}"
+
+- name: Add user's public key to authorized_keys
+  authorized_key:
+    user: "{{ user }}"
+    state: present
+    key: "{{ user_public_key }}"
